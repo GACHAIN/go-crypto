@@ -1,0 +1,81 @@
+package crypto
+
+import "fmt"
+
+type Oval struct {
+	name string
+}
+
+const (
+	cSm2   = "SM2"
+	cEcdsa = "ECDSA"
+)
+
+// var (
+// 	_sm2   = Oval{name: cSm2}
+// 	_ecdsa = Oval{name: cEcdsa}
+// )
+
+// var SM2 = &_sm2
+// var ECDSA = &_ecdsa
+
+var Curve = &curve
+
+var curve Oval
+
+func (o Oval) String() string {
+	return o.name
+}
+
+type Cryptoer interface {
+	gens() error
+}
+
+type sm2 struct {
+	Name string
+}
+
+func (s *sm2) gens() error {
+	s.Name = cSm2
+	return nil
+}
+
+type ecdsa struct {
+	Name string
+}
+
+func (s *ecdsa) gens() error {
+	s.Name = cEcdsa
+	return nil
+}
+
+func getCrypto() (Cryptoer, error) {
+	switch curve.name {
+	case cSm2:
+		return &sm2{}, nil
+	case cEcdsa:
+		return &ecdsa{}, nil
+	}
+	return nil, fmt.Errorf("not support crypto")
+}
+
+func Gens() error {
+	c, err := getCrypto()
+	if err != nil {
+		return err
+	}
+	return c.gens()
+}
+
+func InitCurve(s string) {
+	switch {
+	case s == cEcdsa:
+		curve.name = cEcdsa
+		return
+	case s == cSm2:
+		curve.name = cSm2
+		return
+	}
+	panic(fmt.Errorf("not support crypto"))
+	//curve.name = cSm2
+}
