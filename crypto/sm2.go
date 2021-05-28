@@ -7,7 +7,6 @@ import (
 
 	"github.com/GACHAIN/go-crypto/consts"
 	"github.com/GACHAIN/go-crypto/converter"
-	log "github.com/sirupsen/logrus"
 	"github.com/tjfoc/gmsm/sm2"
 )
 
@@ -22,13 +21,6 @@ func (s *SM2) genKeyPair() ([]byte, []byte, error) {
 }
 
 func (s *SM2) sign(privateKey, data []byte) ([]byte, error) {
-	if len(data) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Debug(ErrSigningEmpty.Error())
-	}
-	return s.signSM2(privateKey, data)
-}
-
-func (s *SM2) signSM2(privateKey, data []byte) ([]byte, error) {
 	pubkeyCurve := sm2.P256Sm2()
 	bi := new(big.Int).SetBytes(privateKey)
 	priv := new(sm2.PrivateKey)
@@ -41,22 +33,15 @@ func (s *SM2) signSM2(privateKey, data []byte) ([]byte, error) {
 
 func (s *SM2) verify(public, data, signature []byte) (bool, error) {
 	if len(public) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Debug(ErrCheckingSignEmpty.Error())
+		return false, ErrCheckingSignEmpty
 	}
-	return s.checkSM2(public, data, signature)
-}
-
-func (s *SM2) checkSM2(public, data, signature []byte) (bool, error) {
 	if len(data) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Error("data is empty")
 		return false, fmt.Errorf("invalid parameters len(data) == 0")
 	}
 	if len(public) != consts.PubkeySizeLength {
-		log.WithFields(log.Fields{"size": len(public), "size_match": consts.PubkeySizeLength, "type": consts.SizeDoesNotMatch}).Error("invalid public key")
 		return false, fmt.Errorf("invalid parameters len(public) = %d", len(public))
 	}
 	if len(signature) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Error("invalid signature")
 		return false, fmt.Errorf("invalid parameters len(signature) == 0")
 	}
 

@@ -31,8 +31,6 @@ import (
 	"fmt"
 
 	"github.com/GACHAIN/go-crypto/consts"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // TODO In order to add new crypto provider with another key length it will be neccecary to fix constant blocksizes like
@@ -91,7 +89,7 @@ var (
 // Encrypt is encrypting
 func Encrypt(msg []byte, key []byte, iv []byte) ([]byte, error) {
 	if len(msg) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Debug(ErrEncryptingEmpty.Error())
+		return nil, ErrEncryptingEmpty
 	}
 	switch cryptoProv {
 	case _AESCBC:
@@ -104,7 +102,7 @@ func Encrypt(msg []byte, key []byte, iv []byte) ([]byte, error) {
 // Decrypt is decrypting
 func Decrypt(msg []byte, key []byte, iv []byte) ([]byte, error) {
 	if len(msg) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Debug(ErrDecryptingEmpty.Error())
+		return nil, ErrDecryptingEmpty
 	}
 	switch cryptoProv {
 	case _AESCBC:

@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"math/big"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/GACHAIN/go-crypto/consts"
 	"github.com/GACHAIN/go-crypto/converter"
 )
@@ -40,7 +38,7 @@ func (e *ECDSA) genKeyPair() ([]byte, []byte, error) {
 
 func (e *ECDSA) sign(privateKey, data []byte) ([]byte, error) {
 	if len(data) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Debug(ErrSigningEmpty.Error())
+		return nil, ErrSigningEmpty
 	}
 	switch signProv {
 	case _ECDSA:
@@ -64,7 +62,7 @@ func (e *ECDSA) privateToPublic(key []byte) ([]byte, error) {
 // checkSign is checking sign
 func (e *ECDSA) verify(public, data, signature []byte) (bool, error) {
 	if len(public) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Debug(ErrCheckingSignEmpty.Error())
+		return false, ErrCheckingSignEmpty
 	}
 	switch signProv {
 	case _ECDSA:
@@ -91,15 +89,12 @@ func (e *ECDSA) signECDSA(privateKey, data []byte) (ret []byte, err error) {
 // CheckECDSA checks if forSign has been signed with corresponding to public the private key
 func (e *ECDSA) checkECDSA(public, data, signature []byte) (bool, error) {
 	if len(data) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Error("data is empty")
 		return false, fmt.Errorf("invalid parameters len(data) == 0")
 	}
 	if len(public) != consts.PubkeySizeLength {
-		log.WithFields(log.Fields{"size": len(public), "size_match": consts.PubkeySizeLength, "type": consts.SizeDoesNotMatch}).Error("invalid public key")
 		return false, fmt.Errorf("invalid parameters len(public) = %d", len(public))
 	}
 	if len(signature) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Error("invalid signature")
 		return false, fmt.Errorf("invalid parameters len(signature) == 0")
 	}
 
@@ -108,7 +103,7 @@ func (e *ECDSA) checkECDSA(public, data, signature []byte) (bool, error) {
 	case elliptic256:
 		pubkeyCurve = elliptic.P256()
 	default:
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Error(ErrUnsupportedCurveSize.Error())
+		return false, ErrUnsupportedCurveSize
 	}
 	pubkey := new(ecdsa.PublicKey)
 	pubkey.Curve = pubkeyCurve
@@ -148,28 +143,23 @@ func (e *ECDSA) parseSign(sign string) (*big.Int, *big.Int, error) {
 	if len(sign) > 128 {
 		binSign, err = hex.DecodeString(sign)
 		if err != nil {
-			log.WithFields(log.Fields{"type": consts.ConversionError, "error": err}).Error("decoding sign from string")
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("decoding sign from string: %w", err)
 		}
 		left := parse(binSign[2:])
 		if left == nil || int(binSign[3])+6 > len(binSign) {
-			log.WithFields(log.Fields{"type": consts.CryptoError}).Error("wrong left parsing")
 			return nil, nil, fmt.Errorf(`wrong left parsing`)
 		}
 		right := parse(binSign[4+binSign[3]:])
 		if right == nil {
-			log.WithFields(log.Fields{"type": consts.CryptoError}).Error("wrong right parsing")
 			return nil, nil, fmt.Errorf(`wrong right parsing`)
 		}
 		sign = hex.EncodeToString(append(left, right...))
 	} else if len(sign) < 128 {
-		log.WithFields(log.Fields{"size": len(sign), "size_match": 128}).Error("wrong signature size")
 		return nil, nil, fmt.Errorf(`wrong len of signature %d`, len(sign))
 	}
 	all, err := hex.DecodeString(sign[:])
 	if err != nil {
-		log.WithFields(log.Fields{"size": len(sign), "size_match": 128}).Error("wrong signature size")
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("wrong signature size: %w", err)
 	}
 	return new(big.Int).SetBytes(all[:32]), new(big.Int).SetBytes(all[len(all)-32:]), nil
 }

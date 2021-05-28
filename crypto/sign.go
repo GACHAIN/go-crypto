@@ -30,14 +30,12 @@ import (
 	"math/big"
 
 	"github.com/GACHAIN/go-crypto/consts"
-	log "github.com/sirupsen/logrus"
 )
 
 func SignString(privateKeyHex, data string) ([]byte, error) {
 	privateKey, err := hex.DecodeString(privateKeyHex)
 	if err != nil {
-		log.WithFields(log.Fields{"type": consts.ConversionError, "error": err}).Error("decoding private key from hex")
-		return nil, err
+		return nil, fmt.Errorf("decoding private key from hex: %w", err)
 	}
 	return getCryptoer().sign(privateKey, []byte(data))
 }
@@ -50,8 +48,7 @@ func GetPrivateKeys(privateKey []byte) (ret *ecdsa.PrivateKey, err error) {
 	case elliptic256:
 		pubkeyCurve = elliptic.P256()
 	default:
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Error(ErrUnsupportedCurveSize.Error())
-		return
+		return nil, ErrUnsupportedCurveSize
 	}
 
 	bi := new(big.Int).SetBytes(privateKey)
@@ -68,7 +65,6 @@ func GetPublicKeys(public []byte) (*ecdsa.PublicKey, error) {
 	pubkey := new(ecdsa.PublicKey)
 
 	if len(public) != consts.PubkeySizeLength {
-		log.WithFields(log.Fields{"size": len(public), "size_match": consts.PubkeySizeLength, "type": consts.SizeDoesNotMatch}).Error("invalid public key")
 		return pubkey, fmt.Errorf("invalid parameters len(public) = %d", len(public))
 	}
 
@@ -77,7 +73,7 @@ func GetPublicKeys(public []byte) (*ecdsa.PublicKey, error) {
 	case elliptic256:
 		pubkeyCurve = elliptic.P256()
 	default:
-		log.WithFields(log.Fields{"type": consts.CryptoError}).Error(ErrUnsupportedCurveSize.Error())
+		return nil, ErrUnsupportedCurveSize
 	}
 
 	pubkey.Curve = pubkeyCurve

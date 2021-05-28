@@ -26,12 +26,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"hash"
-
-	"github.com/GACHAIN/go-crypto/consts"
-
-	log "github.com/sirupsen/logrus"
-	"golang.org/x/crypto/sha3"
 )
 
 type hashProvider int
@@ -67,9 +61,6 @@ func GetHMACWithTimestamp(secret string, message string, timestamp string) ([]by
 
 // _Hash returns hash of passed bytes
 func (h *SHA256) _Hash(msg []byte) []byte {
-	if len(msg) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError, "error": ErrHashingEmpty.Error()}).Debug(ErrHashingEmpty.Error())
-	}
 	switch hashProv {
 	case _SHA256:
 		return hashSHA256(msg)
@@ -78,54 +69,9 @@ func (h *SHA256) _Hash(msg []byte) []byte {
 	}
 }
 
-// doubleHash returns double hash of passed bytes
-func doubleHash(msg []byte) ([]byte, error) {
-	if len(msg) == 0 {
-		log.WithFields(log.Fields{"type": consts.CryptoError, "error": ErrHashingEmpty.Error()}).Debug(ErrHashingEmpty.Error())
-	}
-	switch hashProv {
-	case _SHA256:
-		return hashDoubleSHA256(msg), nil
-	default:
-		return nil, ErrUnknownProvider
-	}
-}
-
 func hashSHA256(msg []byte) []byte {
-	if len(msg) == 0 {
-		log.Debug(ErrHashingEmpty.Error())
-	}
 	hash := sha256.Sum256(msg)
 	return hash[:]
-}
-
-//TODO Replace hashDoubleSHA256 with this method
-func hashDoubleSHA3(msg []byte) ([]byte, error) {
-	if len(msg) == 0 {
-		log.Debug(ErrHashingEmpty.Error())
-	}
-	return hashSHA3256(msg), nil
-}
-
-//In the previous version of this function (api v 1.0) this func worked in another way.
-//First, hash has been calculated from input data
-//Second, obtained hash has been converted to hex
-//Third, hex value has been hashed once more time
-//In this variant second step is omitted.
-func hashDoubleSHA256(msg []byte) []byte {
-	firstHash := sha256.Sum256(msg)
-	secondHash := sha256.Sum256(firstHash[:])
-	return secondHash[:]
-}
-
-func hashSHA3256(msg []byte) []byte {
-	h := make([]byte, 64)
-	sha3.ShakeSum256(h, msg)
-	return h[:]
-}
-
-func NewHash() hash.Hash {
-	return sha256.New()
 }
 
 func HashHex(input []byte) (string, error) {
