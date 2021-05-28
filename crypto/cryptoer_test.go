@@ -7,19 +7,13 @@ import (
 	"testing"
 )
 
-
 func TestGetCryptoer(t *testing.T) {
-	sm2, err := getCryptoer("sm2")
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(sm2.Name())
+	c := getCryptoer()
 	src := []byte("Hello")
 	encodedStr := hex.EncodeToString(src)
 	fmt.Println(src)
 	fmt.Printf("%s\n", encodedStr)
-
-	prv, pub, err := sm2.GenBytesKeys()
+	prv, pub, err := c.genKeyPair()
 	if err != nil {
 		return
 	}
@@ -28,11 +22,9 @@ func TestGetCryptoer(t *testing.T) {
 	fmt.Println("privateKey is:", prv, "publicKey", pub)
 	fmt.Println("privateKeyString is:", prvStr, "publicKeyString is:", pubStr)
 	addr := Address(pub)
-	if err != nil {
-		return
-	}
+
 	fmt.Println("Address is:", addr)
-	signedDataByte, err := sm2.Sign(prv, src)
+	signedDataByte, err := c.sign(prv, src)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +44,7 @@ func TestGetCryptoer(t *testing.T) {
 	// 	log.Fatal(err)
 	// }
 	fmt.Println("signedDataByPriv is:", signedDataByte)
-	ok, err := sm2.CheckSign(pub, src, signedDataByte)
+	ok, err := c.verify(pub, src, signedDataByte)
 	if err != nil {
 		log.Fatal(err)
 	}

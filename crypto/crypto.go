@@ -26,16 +26,11 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	crand "crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/GACHAIN/go-crypto/consts"
-	"github.com/GACHAIN/go-crypto/converter"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -121,43 +116,18 @@ func Decrypt(msg []byte, key []byte, iv []byte) ([]byte, error) {
 
 // SharedEncrypt creates a shared key and encrypts text. The first 32 characters are the created public key.
 // The cipher text can be only decrypted with the original private key.
-func SharedEncrypt(public, text []byte) ([]byte, error) {
-	priv, pub, err := genBytesKeys()
-	if err != nil {
-		return nil, err
-	}
-	shared, err := getSharedKey(priv, public)
-	if err != nil {
-		return nil, err
-	}
-	val, err := Encrypt(shared, text, pub)
-	return val, err
-}
-
-// genBytesKeys generates a random pair of ECDSA private and public binary keys.
-func genBytesKeys() ([]byte, []byte, error) {
-	var curve elliptic.Curve
-	switch ellipticSize {
-	case elliptic256:
-		curve = elliptic.P256()
-	default:
-		return nil, nil, ErrUnsupportedCurveSize
-	}
-	private, err := ecdsa.GenerateKey(curve, crand.Reader)
-	if err != nil {
-		return nil, nil, err
-	}
-	return private.D.Bytes(), append(converter.FillLeft(private.PublicKey.X.Bytes()), converter.FillLeft(private.PublicKey.Y.Bytes())...), nil
-}
-
-// GenHexKeys generates a random pair of ECDSA private and public hex keys.
-func GenHexKeys() (string, string, error) {
-	priv, pub, err := genBytesKeys()
-	if err != nil {
-		return ``, ``, err
-	}
-	return hex.EncodeToString(priv), PubToHex(pub), nil
-}
+//func SharedEncrypt(public, text []byte) ([]byte, error) {
+//	priv, pub, err := genBytesKeys()
+//	if err != nil {
+//		return nil, err
+//	}
+//	shared, err := getSharedKey(priv, public)
+//	if err != nil {
+//		return nil, err
+//	}
+//	val, err := Encrypt(shared, text, pub)
+//	return val, err
+//}
 
 // CBCEncrypt encrypts the text by using the key parameter. It uses CBC mode of AES.
 func encryptCBC(text, key, iv []byte) ([]byte, error) {
@@ -225,54 +195,4 @@ func _PKCS7UnPadding(src []byte) ([]byte, error) {
 	}
 	return src[:length-int(src[length-1])], nil
 
-}
-
-// GetSharedKey creates and returns the shared key = private * public.
-// public must be the public key from the different private key.
-// @note https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange
-func getSharedKey(private, public []byte) (shared []byte, err error) {
-	var pubkeyCurve elliptic.Curve
-	switch ellipticSize {
-	case elliptic256:
-		pubkeyCurve = elliptic.P256()
-	default:
-		return nil, ErrUnknownProvider
-	}
-
-	switch signProv {
-	case _ECDSA:
-		if len(private) != consts.PubkeySizeLength/2 {
-			return nil, ErrIncorrectPrivKeyLength
-		}
-		if len(public) != consts.PubkeySizeLength {
-			return nil, ErrIncorrectPubKeyLength
-		}
-
-		pub := new(ecdsa.PublicKey)
-		pub.Curve = pubkeyCurve
-		pub.X = new(big.Int).SetBytes(public[0 : consts.PubkeySizeLength/2])
-		pub.Y = new(big.Int).SetBytes(public[consts.PubkeySizeLength/2:])
-
-		bi := new(big.Int).SetBytes(private)
-		priv := new(ecdsa.PrivateKey)
-		priv.PublicKey.Curve = pubkeyCurve
-		priv.D = bi
-		priv.PublicKey.X, priv.PublicKey.Y = pubkeyCurve.ScalarBaseMult(bi.Bytes())
-
-		if priv.Curve.IsOnCurve(pub.X, pub.Y) {
-			x, y := pub.Curve.ScalarMult(pub.X, pub.Y, priv.D.Bytes())
-			bytes := x.Bytes()
-			bytes = append(bytes, y.Bytes()...)
-			key, err := _Hash(bytes)
-			if err != nil {
-				return nil, ErrUnknownProvider
-			}
-			shared = key
-		} else {
-			err = fmt.Errorf("Not IsOnCurve")
-		}
-	default:
-		return nil, ErrUnknownProvider
-	}
-	return
 }

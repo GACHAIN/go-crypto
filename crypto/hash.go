@@ -66,15 +66,15 @@ func GetHMACWithTimestamp(secret string, message string, timestamp string) ([]by
 }
 
 // _Hash returns hash of passed bytes
-func _Hash(msg []byte) ([]byte, error) {
+func (h *SHA256) _Hash(msg []byte) []byte {
 	if len(msg) == 0 {
 		log.WithFields(log.Fields{"type": consts.CryptoError, "error": ErrHashingEmpty.Error()}).Debug(ErrHashingEmpty.Error())
 	}
 	switch hashProv {
 	case _SHA256:
-		return hashSHA256(msg), nil
+		return hashSHA256(msg)
 	default:
-		return nil, ErrUnknownProvider
+		return nil
 	}
 }
 
@@ -119,9 +119,9 @@ func hashDoubleSHA256(msg []byte) []byte {
 }
 
 func hashSHA3256(msg []byte) []byte {
-	hash := make([]byte, 64)
-	sha3.ShakeSum256(hash, msg)
-	return hash[:]
+	h := make([]byte, 64)
+	sha3.ShakeSum256(h, msg)
+	return h[:]
 }
 
 func NewHash() hash.Hash {
@@ -129,9 +129,5 @@ func NewHash() hash.Hash {
 }
 
 func HashHex(input []byte) (string, error) {
-	hash, err := _Hash(input)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hash), nil
+	return hex.EncodeToString(getHasher().hash(input)), nil
 }

@@ -6,25 +6,17 @@ import (
 )
 
 func TestGetHasher(t *testing.T) {
-	sm3, err := GetHasher("sm3")
-	if err != nil {
-		fmt.Println(err)
-	}
+	h := getHasher()
 	msg := []byte("Hello")
-	hashedMsg, err := sm3.Hash(msg)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(hashedMsg)
+	fmt.Println(h.hash(msg))
 
 	message := "Hello"
 	secret := "world"
 
-	hmacMsg, err := sm3.GetHMAC(secret, message)
+	hmacMsg, err := h.getHMAC(secret, message)
 
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println(hmacMsg)
-	fmt.Println("name is", sm3.Name())
 }
